@@ -1,0 +1,24 @@
+{
+  "baseUrl": "/",//请不要修改
+  "siteUrl": "https://www.example.com/",//请改为你的博客网址
+  "profile": {
+    "avatar":"/",//你的头像
+    "name": "/",//你的名字
+    "tagline": "/",//关于你的tag
+    "bio": "/",//介绍
+    "location": "/",//地点
+    "links": [//自定义链接
+      { "label": "GitHub", "href": "/" },
+      { "label": "邮箱", "href": "/" }
+    ]
+  },
+  "services": {
+    "shortLink": {
+      "enabled": true//是否启用短链接服务
+    }
+  },
+  "theme": {
+    "customBackground": "/",//博客背景
+    "hideTip": "/"//hide代码的提示
+  }
+}

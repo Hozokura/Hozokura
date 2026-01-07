@@ -129,10 +129,9 @@ a:hover { text-decoration: underline; }
 
 .page {
   display: grid;
-  grid-template-columns: 340px 1fr 260px;
+  grid-template-columns: 240px minmax(0, 1fr) 220px;
   gap: 24px;
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
   padding: 36px 26px 60px;
 }
 
@@ -290,6 +289,8 @@ a:hover { text-decoration: underline; }
 .content {
   display: grid;
   gap: 20px;
+  justify-items: center;
+  align-items: start;
 }
 
 .article-card {
@@ -299,8 +300,10 @@ a:hover { text-decoration: underline; }
   padding: 26px;
   box-shadow: var(--shadow);
   backdrop-filter: blur(6px);
-  width: fit-content;
-  max-width: 100%;
+  width: 100%;
+  max-width: 900px; /* 保持可读宽度上限 */
+  height: auto;
+  margin: 0 auto;
 }
 
 .article-card h1 {
@@ -361,6 +364,46 @@ a:hover { text-decoration: underline; }
 .post-list {
   display: grid;
   gap: 16px;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 18px;
+  flex-wrap: nowrap; /* 保持在一行 */
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.pagination a,
+.pagination span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.95);
+  color: var(--ink);
+  text-decoration: none;
+}
+.pagination a.current {
+  background: var(--accent);
+  color: var(--paper);
+  border-color: var(--accent);
+}
+.pagination span.disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.pagination .ellipsis {
+  padding: 0 8px;
+  color: var(--muted);
 }
 
 .post-item {

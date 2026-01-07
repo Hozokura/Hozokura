@@ -38,8 +38,16 @@ export async function runBuild() {
   const homeHtml = await renderHome({ config, posts, sidebarData });
   await writePage({ html: homeHtml, outDir: DIST_DIR });
 
-  const articlesHtml = await renderArticles({ config, posts, sidebarData });
-  await writePage({ html: articlesHtml, outDir: path.join(DIST_DIR, 'articles') });
+  // Articles pagination
+  const POSTS_PER_PAGE = config.theme?.postsPerPage || 6;
+  const totalArticlePages = Math.max(1, Math.ceil(posts.length / POSTS_PER_PAGE));
+  for (let p = 1; p <= totalArticlePages; p++) {
+    const start = (p - 1) * POSTS_PER_PAGE;
+    const subset = posts.slice(start, start + POSTS_PER_PAGE);
+    const pageHtml = await renderArticles({ config, posts: subset, sidebarData, page: p, totalPages: totalArticlePages });
+    const outDir = p === 1 ? path.join(DIST_DIR, 'articles') : path.join(DIST_DIR, 'articles', String(p));
+    await writePage({ html: pageHtml, outDir });
+  }
 
   const tagsIndexHtml = await renderTaxonomyIndex({
     config,
@@ -354,19 +362,13 @@ async function renderHome({ config, posts, sidebarData }) {
   });
 }
 
-async function renderArticles({ config, posts, sidebarData }) {
+async function renderArticles({ config, posts, sidebarData, page = 1, totalPages = 1 }) {
   const baseUrl = normalizeBase(config.baseUrl || '/');
   const nav = buildNav({ baseUrl });
-  return renderPage({
-    title: '文章列表',
-    content: `
-      <section class="article-card">
-        <div class="eyebrow">全部文章</div>
-        <h1>文章一览</h1>
-        <div class="post-list">
-          ${posts
-            .map(
-              (post) => `
+
+  const listHtml = (posts || [])
+    .map(
+      (post) => `
               <article class="post-item">
                 <div class="post-meta">${post.dateText}</div>
                 <div class="title-row">
@@ -377,9 +379,73 @@ async function renderArticles({ config, posts, sidebarData }) {
                 ${renderPills({ baseUrl, post })}
               </article>
             `
-            )
-            .join('')}
+    )
+    .join('');
+
+  const buildHref = (n) => (n === 1 ? `${baseUrl}articles/` : `${baseUrl}articles/${n}/`);
+
+  // Build paginated sequence with ellipsis similar to Google's style
+  const makePageTokens = (cur, total) => {
+    const delta = 2; // pages around current
+    const range = [];
+    if (total <= 7) {
+      for (let i = 1; i <= total; i++) range.push(i);
+      return range;
+    }
+
+    const left = Math.max(1, cur - delta);
+    const right = Math.min(total, cur + delta);
+
+    range.push(1);
+    if (left > 2) range.push('...');
+
+    for (let i = left; i <= right; i++) {
+      if (i !== 1 && i !== total) range.push(i);
+    }
+
+    if (right < total - 1) range.push('...');
+    if (total !== 1) range.push(total);
+    return range;
+  };
+
+  const tokens = makePageTokens(page, totalPages);
+  let paginationHtml = '<div class="pagination">';
+  // Prev
+  if (page > 1) {
+    paginationHtml += `<a class="prev" href="${buildHref(page - 1)}">上一页</a>`;
+  } else {
+    paginationHtml += `<span class="disabled">上一页</span>`;
+  }
+
+  // Page tokens
+  for (const t of tokens) {
+    if (t === '...') {
+      paginationHtml += `<span class="ellipsis">…</span>`;
+    } else {
+      const n = t;
+      paginationHtml += `<a class="page ${n === page ? 'current' : ''}" href="${buildHref(n)}">${n}</a>`;
+    }
+  }
+
+  // Next
+  if (page < totalPages) {
+    paginationHtml += `<a class="next" href="${buildHref(page + 1)}">下一页</a>`;
+  } else {
+    paginationHtml += `<span class="disabled">下一页</span>`;
+  }
+
+  paginationHtml += '</div>';
+
+  return renderPage({
+    title: '文章列表',
+    content: `
+      <section class="article-card">
+        <div class="eyebrow">全部文章</div>
+        <h1>文章一览</h1>
+        <div class="post-list">
+          ${listHtml}
         </div>
+        ${paginationHtml}
       </section>
     `,
     config,

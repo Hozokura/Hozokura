@@ -366,10 +366,18 @@ async function renderArticles({ config, posts, sidebarData, page = 1, totalPages
   const baseUrl = normalizeBase(config.baseUrl || '/');
   const nav = buildNav({ baseUrl });
 
+  const now = new Date();
+
   const listHtml = (posts || [])
-    .map(
-      (post) => `
-              <article class="post-item">
+    .map((post) => {
+      const isFuture = post.date > now;
+      const style = isFuture ? 'style="display:none"' : '';
+      const classes = `post-item${isFuture ? ' future-post' : ''}`;
+      // Use getTime() for reliable numeric comparison
+      const timestamp = post.date ? post.date.getTime() : 0;
+
+      return `
+              <article class="${classes}" ${style} data-timestamp="${timestamp}">
                 <div class="post-meta">${post.dateText}</div>
                 <div class="title-row">
                   <h2><a href="${baseUrl}posts/${post.slug}/">${post.title}</a></h2>
@@ -378,8 +386,8 @@ async function renderArticles({ config, posts, sidebarData, page = 1, totalPages
                 <p>${post.summary}</p>
                 ${renderPills({ baseUrl, post })}
               </article>
-            `
-    )
+            `;
+    })
     .join('');
 
   const buildHref = (n) => (n === 1 ? `${baseUrl}articles/` : `${baseUrl}articles/${n}/`);
@@ -446,6 +454,20 @@ async function renderArticles({ config, posts, sidebarData, page = 1, totalPages
           ${listHtml}
         </div>
         ${paginationHtml}
+        <script>
+          (function(){
+            try {
+              var now = Date.now();
+              var posts = document.querySelectorAll('.future-post');
+              posts.forEach(function(el){
+                var ts = parseInt(el.getAttribute('data-timestamp') || '0', 10);
+                if(ts <= now){
+                  el.style.display = 'block';
+                }
+              });
+            } catch(e){}
+          })();
+        </script>
       </section>
     `,
     config,
@@ -860,17 +882,17 @@ async function renderTaxonomyIndex({ config, title, baseUrl, type, map, sidebarD
 async function renderTaxonomyPage({ config, title, baseUrl, type, entry, sidebarData }) {
   const nav = buildNav({ baseUrl });
   const label = type === 'tags' ? '标签' : '分类';
-  return renderPage({
-    title,
-    content: `
-      <section class="article-card">
-        <div class="eyebrow">${label}</div>
-        <h1>${entry.label}</h1>
-        <div class="post-list">
-          ${entry.posts
-            .map(
-              (post) => `
-              <article class="post-item">
+  const now = new Date(); // 获取当前构建时间
+
+  const postsHtml = entry.posts
+    .map((post) => {
+      const isFuture = post.date > now;
+      const style = isFuture ? 'style="display:none"' : '';
+      const classes = `post-item${isFuture ? ' future-post' : ''}`;
+      const timestamp = post.date ? post.date.getTime() : 0;
+
+      return `
+              <article class="${classes}" ${style} data-timestamp="${timestamp}">
                 <div class="post-meta">${post.dateText}</div>
                 <div class="title-row">
                   <h2><a href="${baseUrl}posts/${post.slug}/">${post.title}</a></h2>
@@ -878,10 +900,33 @@ async function renderTaxonomyPage({ config, title, baseUrl, type, entry, sidebar
                 </div>
                 <p>${post.summary}</p>
               </article>
-            `
-            )
-            .join('')}
+            `;
+    })
+    .join('');
+
+  return renderPage({
+    title,
+    content: `
+      <section class="article-card">
+        <div class="eyebrow">${label}</div>
+        <h1>${entry.label}</h1>
+        <div class="post-list">
+          ${postsHtml}
         </div>
+        <script>
+          (function(){
+            try {
+              var now = Date.now();
+              var posts = document.querySelectorAll('.future-post');
+              posts.forEach(function(el){
+                var ts = parseInt(el.getAttribute('data-timestamp') || '0', 10);
+                if(ts <= now){
+                  el.style.display = 'block';
+                }
+              });
+            } catch(e){}
+          })();
+        </script>
       </section>
     `,
     config,
